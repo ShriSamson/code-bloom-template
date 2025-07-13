@@ -14,11 +14,9 @@ const formSchema = z.object({
   platforms: z.array(z.enum(["ea-forum", "lesswrong"])).min(1, "Select at least one platform"),
 });
 
-const jobsQueryOptions = convexQuery(api.archive.getUserJobs, {});
+const jobsQueryOptions = convexQuery(api.archiveMutations.getUserJobs, {});
 
 export const Route = createFileRoute("/")({
-  loader: async ({ context: { queryClient } }) =>
-    await queryClient.ensureQueryData(jobsQueryOptions),
   component: HomePage,
 });
 
@@ -54,7 +52,7 @@ function HomePage() {
 
 function ArchiveForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const fetchContent = useMutation(api.archive.fetchUserContent);
+  const fetchContent = useMutation(api.archiveMutations.fetchUserContent);
   
   const form = useForm({
     defaultValues: {
@@ -202,7 +200,7 @@ function ArchiveForm() {
 function JobsList() {
   const { data: jobs } = useSuspenseQuery(jobsQueryOptions);
   const [isExporting, setIsExporting] = useState<string | null>(null);
-  const exportCsv = useMutation(api.archive.exportToCsv);
+  const exportCsv = useMutation(api.archiveActions.exportToCsv);
 
   const exportToCsv = async (jobId: string) => {
     setIsExporting(jobId);

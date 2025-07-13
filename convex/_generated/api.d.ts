@@ -13,6 +13,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as archiveActions from "../archiveActions.js";
+import type * as archiveMutations from "../archiveMutations.js";
 import type * as users from "../users.js";
 
 /**
@@ -24,6 +26,8 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  archiveActions: typeof archiveActions;
+  archiveMutations: typeof archiveMutations;
   users: typeof users;
 }>;
 export declare const api: FilterApi<
