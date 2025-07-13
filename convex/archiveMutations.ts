@@ -128,3 +128,73 @@ export const getJobContent = query({
       .collect();
   },
 });
+
+export const generateCsv = mutation({
+  args: { jobId: v.id("archiveJobs") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    // Get the job to verify ownership
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new ConvexError("Job not found");
+    }
+
+    // Get the current user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    
+    if (!user || job.userId !== user._id) {
+      throw new ConvexError("Unauthorized");
+    }
+
+    // Get all content for this job
+    const content = await ctx.db
+      .query("archivedContent")
+      .withIndex("by_jobId", (q) => q.eq("jobId", args.jobId))
+      .collect();
+    
+    // Generate CSV
+    const csvHeader = [
+      "platform",
+      "content_type", 
+      "title",
+      "content",
+      "url",
+      "date_posted",
+      "score",
+      "parent_title",
+      "word_count",
+      "username"
+    ].join(",");
+
+    const csvRows: string[] = content.map((item: any) => [
+      escapeCSV(item.platform),
+      escapeCSV(item.contentType),
+      escapeCSV(item.title || ""),
+      escapeCSV(item.content),
+      escapeCSV(item.url),
+      escapeCSV(item.datePosted),
+      item.score?.toString() || "",
+      escapeCSV(item.parentTitle || ""),
+      item.wordCount.toString(),
+      escapeCSV(item.username)
+    ].join(","));
+
+    const csv: string = [csvHeader, ...csvRows].join("\n");
+    
+    return csv;
+  },
+});
+
+function escapeCSV(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}

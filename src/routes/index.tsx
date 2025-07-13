@@ -8,6 +8,7 @@ import { Download, Archive, FileText, Clock, CheckCircle, XCircle } from "lucide
 import { useState } from "react";
 import { z } from "zod";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 
 const formSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -57,7 +58,7 @@ function ArchiveForm() {
   const form = useForm({
     defaultValues: {
       username: "",
-      platforms: ["ea-forum", "lesswrong"] as const,
+      platforms: ["ea-forum", "lesswrong"] as string[],
     },
     validators: {
       onChange: formSchema,
@@ -65,7 +66,7 @@ function ArchiveForm() {
     onSubmit: async ({ value }) => {
       setIsLoading(true);
       try {
-        const jobId = await fetchContent({
+        await fetchContent({
           username: value.username,
           platforms: value.platforms,
         });
@@ -110,7 +111,7 @@ function ArchiveForm() {
                   {!field.state.meta.isValid && (
                     <label className="label">
                       <span className="label-text-alt text-error">
-                        {field.state.meta.errors.map(e => e.message).join(", ")}
+                        {field.state.meta.errors.map(e => e?.message).join(", ")}
                       </span>
                     </label>
                   )}
@@ -134,9 +135,9 @@ function ArchiveForm() {
                         onChange={(e) => {
                           const current = field.state.value;
                           if (e.target.checked) {
-                            field.handleChange([...current, "ea-forum"]);
+                            field.handleChange([...current, "ea-forum"] as string[]);
                           } else {
-                            field.handleChange(current.filter(p => p !== "ea-forum"));
+                            field.handleChange(current.filter(p => p !== "ea-forum") as string[]);
                           }
                         }}
                       />
@@ -150,9 +151,9 @@ function ArchiveForm() {
                         onChange={(e) => {
                           const current = field.state.value;
                           if (e.target.checked) {
-                            field.handleChange([...current, "lesswrong"]);
+                            field.handleChange([...current, "lesswrong"] as string[]);
                           } else {
-                            field.handleChange(current.filter(p => p !== "lesswrong"));
+                            field.handleChange(current.filter(p => p !== "lesswrong") as string[]);
                           }
                         }}
                       />
@@ -162,7 +163,7 @@ function ArchiveForm() {
                   {!field.state.meta.isValid && (
                     <label className="label">
                       <span className="label-text-alt text-error">
-                        {field.state.meta.errors.map(e => e.message).join(", ")}
+                        {field.state.meta.errors.map(e => e?.message).join(", ")}
                       </span>
                     </label>
                   )}
@@ -199,10 +200,10 @@ function ArchiveForm() {
 
 function JobsList() {
   const { data: jobs } = useSuspenseQuery(jobsQueryOptions);
-  const [isExporting, setIsExporting] = useState<string | null>(null);
-  const exportCsv = useMutation(api.archiveActions.exportToCsv);
+  const [isExporting, setIsExporting] = useState<Id<"archiveJobs"> | null>(null);
+  const exportCsv = useMutation(api.archiveMutations.generateCsv);
 
-  const exportToCsv = async (jobId: string) => {
+  const exportToCsv = async (jobId: Id<"archiveJobs">) => {
     setIsExporting(jobId);
     try {
       const csv = await exportCsv({ jobId });
